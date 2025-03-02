@@ -21,7 +21,7 @@ services:
       echo;
       echo '------------------------------';
       echo 'Processing models (excluding comments and empty lines):';
-      grep -v '^#' /models.txt | grep -v '^$$' > /tmp/filtered_models.txt;
+      grep -v '^#' /models.txt | grep -v '^$' > /tmp/filtered_models.txt;
       cat /tmp/filtered_models.txt;
       echo;
       echo '------------------------------';
