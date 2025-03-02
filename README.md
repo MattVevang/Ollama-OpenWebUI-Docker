@@ -22,5 +22,12 @@ Docker commands or Ollama etc and I just wanted something that would work.
 
 ## ToDos
 
-I want to separate the list of LLM models to a separate file instead
-of having them all listed within the Docker compose file.
+- Explore the ability to incorporate NPU support in addition to being able to use NVIDIA
+GPU accelerators.
+- See if it is possible to add support for AMD based GPUs as well.
+
+## Features
+
+- Added `models.txt` file to the directory so you can add as many models to the list
+without having to add additional lines to the `docker-compose.yaml` file.
+- Supports using NVIDIA GPUs (if installed and detected).
