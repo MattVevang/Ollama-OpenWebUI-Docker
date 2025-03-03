@@ -18,7 +18,7 @@ Docker commands or Ollama etc and I just wanted something that would work.
 
 ## How to use
 
-- When you use `docker compose --profile gpu up`, Docker will start `ollama-nvidia` with proper GPU access
+- When you use `docker compose --profile gpu up`, Docker will start `ollama-gpu` with proper GPU access
 - When you use `docker compose up`, Docker will start `ollama` without GPU passthrough
 
 - When shutting down, if you used the `--profile gpu up` command to start you must then down that profile too.
