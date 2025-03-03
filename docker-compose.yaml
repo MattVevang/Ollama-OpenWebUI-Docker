@@ -21,7 +21,7 @@ services:
       ollama-network:  # Use the same format as the GPU version
         aliases:
           - ollama  # This makes it reachable as "ollama" for WebUI
-    profiles: ["", "!gpu"]  # Start when no profile is specified, but not with "gpu"
+    profiles: ["", "!gpu"]  # Run when: 1) no profile is specified 2) any profile EXCEPT "gpu"
 
   # GPU version - only with gpu profile
   ollama-gpu:
