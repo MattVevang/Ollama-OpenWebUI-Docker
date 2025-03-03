@@ -18,13 +18,16 @@ Docker commands or Ollama etc and I just wanted something that would work.
 
 ## How to use
 
-... will add details
+- When you use `docker compose --profile gpu up`, Docker will start `ollama-nvidia` with proper GPU access
+- When you use `docker compose up`, Docker will start `ollama` without GPU passthrough
+
+- When shutting down, if you used the `--profile gpu up` command to start you must then down that profile too.
+  - `docker compose --profile gpu down`
+- When using CPU only mode you can use the basic `docker compose down` command.
 
 ## ToDos
 
-- Explore the ability to incorporate NPU support in addition to being able to use NVIDIA
-GPU accelerators.
-- See if it is possible to add support for AMD based GPUs as well.
+- Determine future ToDos after further runtime and use.
 
 ## Features
 
