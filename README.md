@@ -21,6 +21,9 @@ Docker commands or Ollama etc and I just wanted something that would work.
 - Install docker on your system.
   - I will be looking at alternative solutions such as possibly 'podman' to using docker due to license requirements
   for corporate use.
+- Clone this repo to your local system.
+  - git clone https://github.com/MattVevang/Ollama-OpenWebUI-Docker.git
+- Change location into this new directory `Ollama-OpenWebUI-Docker`.
 - When you use `docker compose --profile gpu up`, Docker will start `ollama-gpu` with proper GPU access
 - When you use `docker compose up`, Docker will start `ollama` without GPU passthrough
 
