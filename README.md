@@ -18,12 +18,37 @@ Docker commands or Ollama etc and I just wanted something that would work.
 
 ## How to use
 
+- Install docker on your system.
+  - I will be looking at alternative solutions such as possibly 'podman' to using docker due to license requirements
+  for corporate use.
 - When you use `docker compose --profile gpu up`, Docker will start `ollama-gpu` with proper GPU access
 - When you use `docker compose up`, Docker will start `ollama` without GPU passthrough
+
+- After starting the container wait until you see this output return in the terminal.
+
+```text
+open-webui  |
+open-webui  |  ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗    ██╗███████╗██████╗ ██╗   ██╗██╗
+open-webui  | ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║    ██║██╔════╝██╔══██╗██║   ██║██║
+open-webui  | ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║ █╗ ██║█████╗  ██████╔╝██║   ██║██║
+open-webui  | ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║███╗██║██╔══╝  ██╔══██╗██║   ██║██║
+open-webui  | ╚██████╔╝██║     ███████╗██║ ╚████║    ╚███╔███╔╝███████╗██████╔╝╚██████╔╝██║
+open-webui  |  ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝     ╚══╝╚══╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝
+open-webui  |
+open-webui  |
+open-webui  | vX.X.XX - building the best open-source AI user interface.
+open-webui  |
+open-webui  | https://github.com/open-webui/open-webui
+open-webui  |
+```
+
+- Navigate to <http://localhost:3000> in order to access the web interface.
+- Select the model you wish to interact with at the top of the screen (or you can chose to run more than one at once).
 
 - When shutting down, if you used the `--profile gpu up` command to start you must then down that profile too.
   - `docker compose --profile gpu down`
 - When using CPU only mode you can use the basic `docker compose down` command.
+
 
 ## ToDos
 
