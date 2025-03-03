@@ -65,7 +65,13 @@ services:
     container_name: open-webui
     volumes:
       - open-webui:/app/backend/data
-    depends_on: {}  # Remove specific dependencies
+    depends_on:
+      ollama-cpu:
+        condition: service_healthy
+        required: false
+      ollama-gpu:
+        condition: service_healthy
+        required: false
     networks:
       - ollama-network
     ports:
