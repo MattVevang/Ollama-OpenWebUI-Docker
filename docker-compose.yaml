@@ -3,6 +3,7 @@ services:
   ollama-cpu:
     image: ollama/ollama:latest
     container_name: ollama-cpu
+    hostname: ollama
     ports:
       - 11434:11434
     volumes:
@@ -17,17 +18,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      ollama-network:  # Use the same format as the GPU version
-        aliases:
-          - ollama  # This makes it reachable as "ollama" for WebUI
-    profiles: ["", "!gpu"]  # Run when: 1) no profile is specified 2) any profile EXCEPT "gpu"
+    profiles: ["", "!gpu"]
 
   # GPU version - only with gpu profile
   ollama-gpu:
     image: ollama/ollama:latest
     container_name: ollama-gpu
-    profiles: ["gpu"]  # Only start with --profile gpu
+    hostname: ollama
+    profiles: ["gpu"]
     ports:
       - 11434:11434
     volumes:
@@ -42,22 +40,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      ollama-network:
-        aliases:
-          - ollama  # This makes it reachable as "ollama" for WebUI
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - HSA_OVERRIDE_GFX_VERSION=10.3.0
       - ROCR_VISIBLE_DEVICES=all
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   # WebUI - always starts by default with any profile
   open-webui:
@@ -72,8 +59,6 @@ services:
       ollama-gpu:
         condition: service_healthy
         required: false
-    networks:
-      - ollama-network
     ports:
       - 3000:8080
     environment:
@@ -82,11 +67,7 @@ services:
       - 'WEBUI_AUTH=False'
       - 'WEBUI_ADMIN_MODE=True'
     restart: unless-stopped
-    profiles: ["", "gpu"]  # Start with either no profile or gpu profile
-
-networks:
-  ollama-network:
-    name: ollama-network
+    profiles: ["", "gpu"]
 
 volumes:
   ollama: {}
