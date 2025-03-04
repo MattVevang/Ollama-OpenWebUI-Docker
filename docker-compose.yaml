@@ -77,10 +77,10 @@ services:
     ports:
       - 3000:8080
     environment:
-      - 'OLLAMA_BASE_URL=http://ollama:11434'
-      - 'WEBUI_SECRET_KEY='
-      - 'WEBUI_AUTH=False'
-      - 'WEBUI_ADMIN_MODE=True'
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=
+      - WEBUI_AUTH=False
+      - WEBUI_ADMIN_MODE=True
     restart: unless-stopped
     profiles: ["", "gpu"]  # Start with either no profile or gpu profile
 

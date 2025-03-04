@@ -1,5 +1,8 @@
-# List of models to be pulled by the Ollama service
-# Add one model per line
+# List models to pull at startup, one per line
+# Examples:
+# llama2
+# gemma:2b
+# phi3:mini
 
 deepseek-r1:1.5b
 deepseek-r1:7b
