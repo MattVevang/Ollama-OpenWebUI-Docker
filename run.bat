@@ -49,8 +49,9 @@ if "!DOCKER_INSTALLED!"=="true" if "!PODMAN_INSTALLED!"=="true" (
     if !errorlevel! EQU 2 (
         set "ENGINE=podman"
         echo Using Podman as container engine.
-        if "!PODMAN_RUNNING!"=="false" goto :start_podman
-        goto :continue_script
+        REM Force Podman to use its native compose provider
+        set "PODMAN_COMPOSE_PROVIDER=podman-compose"
+        goto :check_podman
     ) else (
         set "ENGINE=docker"
         echo Using Docker as container engine.
@@ -63,8 +64,8 @@ if "!DOCKER_INSTALLED!"=="true" if "!PODMAN_INSTALLED!"=="true" (
 ) else if "!PODMAN_INSTALLED!"=="true" (
     set "ENGINE=podman"
     echo Using Podman as container engine.
-    if "!PODMAN_RUNNING!"=="false" goto :start_podman
-    goto :continue_script
+    set "PODMAN_COMPOSE_PROVIDER=podman-compose"
+    goto :check_podman
 )
 
 :check_docker
@@ -104,7 +105,11 @@ if !errorlevel! NEQ 0 (
         )
     )
 )
-goto :continue_script
+goto :main_menu
+
+:check_podman
+if "!PODMAN_RUNNING!"=="false" goto :start_podman
+goto :main_menu
 
 :start_podman
 echo.
@@ -140,7 +145,9 @@ if !errorlevel! NEQ 0 (
     goto :end
 )
 
+REM Remove the network creation section and continue with existing code
 echo Waiting for Podman to start (this may take a moment^)...
+
 set /a attempts=0
 set /a max_attempts=30
 
@@ -155,7 +162,7 @@ if !errorlevel! EQU 0 (
     podman ps >nul 2>nul
     if !errorlevel! EQU 0 (
         echo Podman started successfully.
-        goto :continue_script
+        goto :main_menu
     )
 )
 
@@ -167,7 +174,7 @@ if !attempts! LSS !max_attempts! (
 )
 
 :docker_ready
-:continue_script
+:main_menu
 echo Ollama with Open WebUI - Windows Launcher
 echo =========================================
 

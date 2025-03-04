@@ -18,9 +18,9 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      ollama-network:  # Use the same format as the GPU version
-        aliases:
-          - ollama  # This makes it reachable as "ollama" for WebUI
+      - default
+    network_mode: bridge
+    hostname: ollama
     profiles: ["", "!gpu"]  # Run when: 1) no profile is specified 2) any profile EXCEPT "gpu"
 
   # GPU version - only with gpu profile
@@ -43,9 +43,9 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      ollama-network:
-        aliases:
-          - ollama  # This makes it reachable as "ollama" for WebUI
+      - default
+    network_mode: bridge
+    hostname: ollama
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
@@ -73,7 +73,8 @@ services:
         condition: service_healthy
         required: false
     networks:
-      - ollama-network
+      - default
+    network_mode: bridge
     ports:
       - 3000:8080
     environment:
@@ -83,10 +84,6 @@ services:
       - WEBUI_ADMIN_MODE=True
     restart: unless-stopped
     profiles: ["", "gpu"]  # Start with either no profile or gpu profile
-
-networks:
-  ollama-network:
-    name: ollama-network
 
 volumes:
   ollama: {}

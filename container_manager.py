@@ -29,6 +29,40 @@ def check_containers_status(engine):
     else:
         print(f"Failed to check container status. Error: {stderr}")
 
+def ensure_network_exists(engine, network_name="ollama-network"):
+    """Ensure the required network exists"""
+    cmd = [engine, "network", "ls", "--format", "{{.Name}}"]
+    returncode, stdout, stderr = run_command(cmd, capture_output=True)
+    
+    if returncode == 0 and network_name in stdout:
+        print(f"Network {network_name} exists")
+        return True
+    
+    print(f"Creating network {network_name}...")
+    create_cmd = [engine, "network", "create", network_name]
+    returncode, _, _ = run_command(create_cmd)
+    return returncode == 0
+
+def get_compose_command(engine, action, profile=""):
+    if engine == "podman":
+        # Use podman-compose instead of podman compose
+        base_cmd = ["podman-compose"]
+    else:
+        base_cmd = [engine, "compose"]
+        
+    # Add profile if specified
+    if profile == "gpu":
+        base_cmd.extend(["--profile", "gpu"])
+    
+    # Add action
+    if action == "up":
+        base_cmd.append("up")
+        base_cmd.append("-d")  # Detached mode
+    elif action == "down":
+        base_cmd.append("down")
+    
+    return base_cmd
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: python container_manager.py [up|down|logs] [docker|podman] [profile]")
@@ -48,18 +82,11 @@ def main():
         return 1
     
     # Base compose command - using the existing docker-compose.yaml file
-    compose_cmd = [engine, "compose"]
-    
-    # Add profile if specified
-    if profile == "gpu":
-        compose_cmd.extend(["--profile", "gpu"])
+    compose_cmd = get_compose_command(engine, action, profile)
     
     # Add action
     if action == "up":
-        compose_cmd.append("up")
-        compose_cmd.append("-d")  # Detached mode
-        
-        # Run the command
+        # Remove network check and run command directly
         returncode, _, _ = run_command(compose_cmd)
         
         # If successful, wait a moment and show status
@@ -87,7 +114,6 @@ def main():
             return returncode
     
     elif action == "down":
-        compose_cmd.append("down")
         returncode, _, _ = run_command(compose_cmd)
         return returncode
     
