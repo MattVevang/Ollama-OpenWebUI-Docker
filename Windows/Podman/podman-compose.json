@@ -1,0 +1,63 @@
+{
+  "services": {
+    "ollama-cpu": {
+      "image": "docker.io/ollama/ollama:latest",
+      "container_name": "ollama-cpu",
+      "ports": ["11434:11434"],
+      "volumes": [
+        "ollama:/root/.ollama:Z",
+        "${PWD}/models.txt:/models.txt:Z",
+        "${PWD}/cpu-entrypoint.sh:/cpu-entrypoint.sh:Z"
+      ],
+      "entrypoint": ["/bin/sh", "-c", "/cpu-entrypoint.sh"],
+      "networks": {
+        "ollama-network": {
+          "aliases": ["ollama"]
+        }
+      }
+    },
+    "ollama-gpu": {
+      "image": "docker.io/ollama/ollama:latest",
+      "container_name": "ollama-gpu",
+      "ports": ["11434:11434"],
+      "volumes": [
+        "ollama:/root/.ollama:Z",
+        "${PWD}/models.txt:/models.txt:Z",
+        "${PWD}/gpu-entrypoint.sh:/gpu-entrypoint.sh:Z"
+      ],
+      "entrypoint": ["/bin/sh", "-c", "/gpu-entrypoint.sh"],
+      "networks": {
+        "ollama-network": {
+          "aliases": ["ollama"]
+        }
+      },
+      "environment": [
+        "NVIDIA_VISIBLE_DEVICES=all",
+        "NVIDIA_DRIVER_CAPABILITIES=compute,utility",
+        "HSA_OVERRIDE_GFX_VERSION=10.3.0",
+        "ROCR_VISIBLE_DEVICES=all"
+      ],
+      "device": [
+        "/dev/nvidia0:/dev/nvidia0",
+        "/dev/nvidiactl:/dev/nvidiactl",
+        "/dev/nvidia-modeset:/dev/nvidia-modeset",
+        "/dev/nvidia-uvm:/dev/nvidia-uvm"
+      ]
+    },
+    "open-webui": {
+      "image": "ghcr.io/open-webui/open-webui:main",
+      "container_name": "open-webui",
+      "volumes": ["open-webui:/app/backend/data:Z"],
+      "networks": {
+        "ollama-network": {}
+      },
+      "ports": ["3000:8080"],
+      "environment": {
+        "OLLAMA_BASE_URL": "http://ollama:11434",
+        "WEBUI_SECRET_KEY": "",
+        "WEBUI_AUTH": "False",
+        "WEBUI_ADMIN_MODE": "True"
+      }
+    }
+  }
+}

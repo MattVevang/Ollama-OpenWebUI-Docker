@@ -1,0 +1,94 @@
+# Same content as docker-compose.yaml, but renamed to podman-compose.yaml
+# Podman is compatible with Docker Compose format, so no changes needed to the content
+
+version: '3'
+services:
+  ollama-cpu:
+    image: docker.io/ollama/ollama:latest
+    container_name: ollama-cpu
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama:/root/.ollama:Z
+      - ${PWD}/models.txt:/models.txt:Z
+      - ${PWD}/cpu-entrypoint.sh:/cpu-entrypoint.sh:Z
+    entrypoint: ["/bin/sh", "/cpu-entrypoint.sh"]
+    tty: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      ollama-network:
+        aliases:
+          - ollama
+    profiles: ["", "!gpu"]
+
+  ollama-gpu:
+    image: docker.io/ollama/ollama:latest
+    container_name: ollama-gpu
+    profiles: ["gpu"]
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama:/root/.ollama:Z
+      - ${PWD}/models.txt:/models.txt:Z
+      - ${PWD}/gpu-entrypoint.sh:/gpu-entrypoint.sh:Z
+    entrypoint: ["/bin/sh", "/gpu-entrypoint.sh"]
+    tty: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      ollama-network:
+        aliases:
+          - ollama
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - HSA_OVERRIDE_GFX_VERSION=10.3.0
+      - ROCR_VISIBLE_DEVICES=all
+    device: # Podman specific GPU device mapping
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    volumes:
+      - open-webui:/app/backend/data:Z
+    depends_on:
+      ollama-cpu:
+        condition: service_healthy
+        required: false
+      ollama-gpu:
+        condition: service_healthy
+        required: false
+    networks:
+      - ollama-network
+    ports:
+      - 3000:8080
+    environment:
+      - 'OLLAMA_BASE_URL=http://ollama:11434'
+      - 'WEBUI_SECRET_KEY='
+      - 'WEBUI_AUTH=False'
+      - 'WEBUI_ADMIN_MODE=True'
+    restart: unless-stopped
+    profiles: ["", "gpu"]
+
+networks:
+  ollama-network:
+    name: ollama-network
+
+volumes:
+  ollama:
+    name: ollama
+  open-webui:
+    name: open-webui
