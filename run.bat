@@ -13,10 +13,20 @@ if %ERRORLEVEL% EQU 0 (
 
 REM Check for Podman
 set "PODMAN_INSTALLED=false"
+set "PODMAN_RUNNING=false"
 where podman >nul 2>nul
 if %ERRORLEVEL% EQU 0 (
     set "PODMAN_INSTALLED=true"
     echo Podman detected.
+    
+    REM Check if Podman is running
+    podman info >nul 2>nul
+    if !ERRORLEVEL! EQU 0 (
+        set "PODMAN_RUNNING=true"
+        echo Podman is running.
+    ) else (
+        echo Podman is installed but not running.
+    )
 )
 
 REM Check if neither is installed
@@ -39,62 +49,35 @@ if "!DOCKER_INSTALLED!"=="true" if "!PODMAN_INSTALLED!"=="true" (
     if !errorlevel! EQU 2 (
         set "ENGINE=podman"
         echo Using Podman as container engine.
+        if "!PODMAN_RUNNING!"=="false" goto :start_podman
+        goto :continue_script
     ) else (
         set "ENGINE=docker"
         echo Using Docker as container engine.
-        
-        REM Check Docker status immediately after selection
-        docker info >nul 2>nul
-        if !errorlevel! NEQ 0 (
-            echo.
-            echo Docker is not running. Do you want to start Docker now?
-            choice /c YN /n /m "Start Docker? (Y/N): "
-            if !errorlevel! EQU 2 (
-                echo Docker must be running to continue. Exiting...
-                goto :end
-            ) else (
-                echo Starting Docker service...
-                start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-                echo Waiting for Docker to start (this may take a moment^)...
-                
-                set /a attempts=0
-                set /a max_attempts=30
-                
-                :docker_check_loop
-                timeout /t 3 >nul
-                set /a attempts+=1
-                echo Checking if Docker is responsive (attempt !attempts! of !max_attempts!^)...
-                
-                docker info >nul 2>nul
-                if !errorlevel! EQU 0 (
-                    echo Docker started successfully.
-                    goto :docker_ready
-                )
-                
-                if !attempts! LSS !max_attempts! (
-                    goto :docker_check_loop
-                ) else (
-                    echo Docker did not start in the expected time. Please start Docker manually and try again.
-                    goto :end
-                )
-            )
-        )
+        goto :check_docker
     )
 ) else if "!DOCKER_INSTALLED!"=="true" (
     set "ENGINE=docker"
     echo Using Docker as container engine.
-    
-    REM Check Docker status for single-engine case
-    docker info >nul 2>nul
-    if !errorlevel! NEQ 0 (
-        echo.
-        echo Docker is not running. Do you want to start Docker now?
-        choice /c YN /n /m "Start Docker? (Y/N): "
-        if !errorlevel! EQU 2 (
-            echo Docker must be running to continue. Exiting...
-            goto :end
-        )
-        
+    goto :check_docker
+) else if "!PODMAN_INSTALLED!"=="true" (
+    set "ENGINE=podman"
+    echo Using Podman as container engine.
+    if "!PODMAN_RUNNING!"=="false" goto :start_podman
+    goto :continue_script
+)
+
+:check_docker
+REM Check Docker status immediately after selection
+docker info >nul 2>nul
+if !errorlevel! NEQ 0 (
+    echo.
+    echo Docker is not running. Do you want to start Docker now?
+    choice /c YN /n /m "Start Docker? (Y/N): "
+    if !errorlevel! EQU 2 (
+        echo Docker must be running to continue. Exiting...
+        goto :end
+    ) else (
         echo Starting Docker service...
         start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
         echo Waiting for Docker to start (this may take a moment^)...
@@ -102,7 +85,7 @@ if "!DOCKER_INSTALLED!"=="true" if "!PODMAN_INSTALLED!"=="true" (
         set /a attempts=0
         set /a max_attempts=30
         
-        :docker_check_loop_single
+        :docker_check_loop
         timeout /t 3 >nul
         set /a attempts+=1
         echo Checking if Docker is responsive (attempt !attempts! of !max_attempts!^)...
@@ -114,32 +97,77 @@ if "!DOCKER_INSTALLED!"=="true" if "!PODMAN_INSTALLED!"=="true" (
         )
         
         if !attempts! LSS !max_attempts! (
-            goto :docker_check_loop_single
+            goto :docker_check_loop
         ) else (
             echo Docker did not start in the expected time. Please start Docker manually and try again.
             goto :end
         )
     )
-) else if "!PODMAN_INSTALLED!"=="true" (
-    set "ENGINE=podman"
-    echo Using Podman as container engine.
+)
+goto :continue_script
+
+:start_podman
+echo.
+echo Podman is not running. Do you want to start Podman now?
+choice /c YN /n /m "Start Podman? (Y/N): "
+if !errorlevel! EQU 2 (
+    echo Podman must be running to continue. Exiting...
+    goto :end
 )
 
-:docker_ready
-REM Same check for Podman if needed (simplified version)
-if "%ENGINE%"=="podman" (
-    podman ps >nul 2>nul
-    if %ERRORLEVEL% NEQ 0 (
-        echo.
-        echo Podman does not seem to be running properly.
-        echo Please ensure Podman is properly configured before continuing.
-        choice /c YN /n /m "Continue anyway? (Y/N): "
-        if errorlevel 2 (
-            goto :end
-        )
+echo Starting Podman service...
+
+REM Get current user's profile path and start Podman Desktop
+for /f "tokens=*" %%i in ('echo %USERPROFILE%') do set "USER_PROFILE=%%i"
+start "" "!USER_PROFILE!\AppData\Local\Programs\podman-desktop\Podman Desktop.exe"
+
+REM Initialize and start Podman machine with proper checks
+echo Checking Podman machine status...
+podman machine list >nul 2>nul
+if !errorlevel! NEQ 0 (
+    echo Initializing new Podman machine...
+    podman machine init
+    if !errorlevel! NEQ 0 (
+        echo Failed to initialize Podman machine. Please check Podman installation.
+        goto :end
     )
 )
 
+echo Starting Podman machine...
+podman machine start
+if !errorlevel! NEQ 0 (
+    echo Failed to start Podman machine. Please check Podman installation.
+    goto :end
+)
+
+echo Waiting for Podman to start (this may take a moment^)...
+set /a attempts=0
+set /a max_attempts=30
+
+:podman_check_loop
+timeout /t 3 >nul
+set /a attempts+=1
+echo Checking if Podman is responsive (attempt !attempts! of !max_attempts!^)...
+
+REM More comprehensive Podman checks
+podman machine list | findstr /C:"Currently running" >nul
+if !errorlevel! EQU 0 (
+    podman ps >nul 2>nul
+    if !errorlevel! EQU 0 (
+        echo Podman started successfully.
+        goto :continue_script
+    )
+)
+
+if !attempts! LSS !max_attempts! (
+    goto :podman_check_loop
+) else (
+    echo Podman did not start in the expected time. Please start Podman manually and try again.
+    goto :end
+)
+
+:docker_ready
+:continue_script
 echo Ollama with Open WebUI - Windows Launcher
 echo =========================================
 
