@@ -81,8 +81,40 @@ services:
       - 'WEBUI_SECRET_KEY='
       - 'WEBUI_AUTH=False'
       - 'WEBUI_ADMIN_MODE=True'
+      - 'AUTOMATIC1111_BASE_URL=http://stable-diffusion:7860'
+      - 'AUTOMATIC1111_API_AUTH=admin:admin123'
+      - 'ENABLE_IMAGE_GENERATION=true'
+      - 'IMAGE_GENERATION_MODEL=v1-5-pruned-emaonly'
+      - 'IMAGE_SIZE=640x800'
     restart: unless-stopped
     profiles: ["", "gpu"]  # Start with either no profile or gpu profile
+
+  # Stable Diffusion API - only with gpu profile
+  stable-diffusion:
+    build:
+      context: .
+      dockerfile: Dockerfile.sd
+    pull_policy: build
+    container_name: stable-diffusion
+    profiles: ["gpu"]
+    ports:
+      - 7860:7860  # Changed back to 7860 to match Open WebUI's expected port
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - stable-diffusion-models:/app/models
+      - stable-diffusion-outputs:/app/outputs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - ollama-network
+    restart: unless-stopped
 
 networks:
   ollama-network:
@@ -91,3 +123,6 @@ networks:
 volumes:
   ollama: {}
   open-webui: {}
+  stable-diffusion: {}
+  stable-diffusion-models: {}
+  stable-diffusion-outputs: {}

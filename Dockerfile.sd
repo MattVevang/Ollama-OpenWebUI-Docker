@@ -1,0 +1,48 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    python3 \
+    python3-pip \
+    python3-venv \
+    google-perftools \
+    bc \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    ffmpeg \
+    python3-opencv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user
+RUN useradd -m -u 1000 sduser
+
+# Create app directory and set ownership
+WORKDIR /home/sduser/app
+RUN chown -R sduser:sduser /home/sduser
+
+# Switch to non-root user
+USER sduser
+
+# Clone Stable Diffusion WebUI
+RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
+
+# Create and activate virtual environment
+RUN python3 -m venv /home/sduser/app/venv
+ENV PATH="/home/sduser/app/venv/bin:$PATH"
+
+# Install torch and other dependencies
+RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
+
+COPY --chown=sduser:sduser sd-entrypoint.sh /home/sduser/app/sd-entrypoint.sh
+RUN chmod +x /home/sduser/app/sd-entrypoint.sh
+
+EXPOSE 7861
+
+ENTRYPOINT ["/home/sduser/app/sd-entrypoint.sh"]
