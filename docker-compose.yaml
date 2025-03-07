@@ -3,54 +3,35 @@ services:
   ollama-cpu:
     image: ollama/ollama:latest
     container_name: ollama-cpu
-    ports:
-      - 11434:11434
     volumes:
       - ollama:/root/.ollama
-      - ./models.txt:/models.txt
-      - ./cpu-entrypoint.sh:/cpu-entrypoint.sh
-    entrypoint: ["/bin/sh", "/cpu-entrypoint.sh"]
-    tty: true
-    restart: unless-stopped
+    networks:
+      ollama-network:
+        aliases:
+          - ollama
+    ports:
+      - 11434:11434
+    profiles: [""]  # Only starts with default profile
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      test: ["CMD", "curl", "-f", "http://localhost:11434"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      ollama-network:  # Use the same format as the GPU version
-        aliases:
-          - ollama  # This makes it reachable as "ollama" for WebUI
-    profiles: ["", "!gpu"]  # Run when: 1) no profile is specified 2) any profile EXCEPT "gpu"
-
+    restart: unless-stopped
+    
   # GPU version - only with gpu profile
   ollama-gpu:
     image: ollama/ollama:latest
     container_name: ollama-gpu
-    profiles: ["gpu"]  # Only start with --profile gpu
-    ports:
-      - 11434:11434
     volumes:
       - ollama:/root/.ollama
-      - ./models.txt:/models.txt
-      - ./gpu-entrypoint.sh:/gpu-entrypoint.sh
-    entrypoint: ["/bin/sh", "/gpu-entrypoint.sh"]
-    tty: true
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       ollama-network:
         aliases:
-          - ollama  # This makes it reachable as "ollama" for WebUI
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - HSA_OVERRIDE_GFX_VERSION=10.3.0
-      - ROCR_VISIBLE_DEVICES=all
+          - ollama
+    ports:
+      - 11434:11434
+    profiles: ["gpu"]  # Only starts with gpu profile
     deploy:
       resources:
         reservations:
@@ -58,6 +39,12 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   # WebUI - always starts by default with any profile
   open-webui:
@@ -71,6 +58,9 @@ services:
         required: false
       ollama-gpu:
         condition: service_healthy
+        required: false
+      stable-diffusion:
+        condition: service_started
         required: false
     networks:
       - ollama-network
@@ -96,15 +86,18 @@ services:
       dockerfile: Dockerfile.sd
     pull_policy: build
     container_name: stable-diffusion
-    profiles: ["gpu"]
+    profiles: ["gpu"]  # Only runs with gpu profile
+    # Run as root initially to set permissions
+    user: "0:0"  
     ports:
-      - 7860:7860  # Changed back to 7860 to match Open WebUI's expected port
+      - 7860:7860
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
-      - stable-diffusion-models:/app/models
-      - stable-diffusion-outputs:/app/outputs
+      # Use bind mounts instead of named volumes for better permission handling
+      - ./sd-models:/home/sduser/app/models
+      - ./sd-outputs:/home/sduser/app/outputs
     deploy:
       resources:
         reservations:
@@ -115,14 +108,16 @@ services:
     networks:
       - ollama-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:7860/api/heartbeat || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 300s  # Increased startup period to give more time
 
 networks:
   ollama-network:
-    name: ollama-network
 
 volumes:
-  ollama: {}
-  open-webui: {}
-  stable-diffusion: {}
-  stable-diffusion-models: {}
-  stable-diffusion-outputs: {}
+  ollama:
+  open-webui:

@@ -18,19 +18,20 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     ffmpeg \
     python3-opencv \
+    wget \
+    sudo \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
 RUN useradd -m -u 1000 sduser
 
-# Create app directory and set ownership
+# Create app directory with very permissive permissions
 WORKDIR /home/sduser/app
-RUN chown -R sduser:sduser /home/sduser
+RUN chown -R sduser:sduser /home/sduser && chmod 777 /home/sduser/app
 
-# Switch to non-root user
+# Clone Stable Diffusion WebUI as sduser
 USER sduser
-
-# Clone Stable Diffusion WebUI
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git .
 
 # Create and activate virtual environment
@@ -40,9 +41,11 @@ ENV PATH="/home/sduser/app/venv/bin:$PATH"
 # Install torch and other dependencies
 RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
 
-COPY --chown=sduser:sduser sd-entrypoint.sh /home/sduser/app/sd-entrypoint.sh
+# Switch back to root for entrypoint
+USER root
+COPY sd-entrypoint.sh /home/sduser/app/sd-entrypoint.sh
 RUN chmod +x /home/sduser/app/sd-entrypoint.sh
 
-EXPOSE 7861
+EXPOSE 7860
 
 ENTRYPOINT ["/home/sduser/app/sd-entrypoint.sh"]
