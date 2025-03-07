@@ -72,10 +72,14 @@ services:
       - 'WEBUI_AUTH=False'
       - 'WEBUI_ADMIN_MODE=True'
       - 'AUTOMATIC1111_BASE_URL=http://stable-diffusion:7860'
-      - 'AUTOMATIC1111_API_AUTH=admin:admin123'
+      - 'AUTOMATIC1111_API_AUTH=' #admin:admin123'
       - 'ENABLE_IMAGE_GENERATION=true'
       - 'IMAGE_GENERATION_MODEL=v1-5-pruned-emaonly'
       - 'IMAGE_SIZE=640x800'
+      # Add these new environment variables to set Automatic1111 as default
+      - 'IMAGE_GEN_USE_AUTOMATIC1111=true'
+      - 'DEFAULT_IMAGE_GENERATOR=automatic1111'
+      - 'IMAGE_GEN_USE_OPENAI=false'
     restart: unless-stopped
     profiles: ["", "gpu"]  # Start with either no profile or gpu profile
 

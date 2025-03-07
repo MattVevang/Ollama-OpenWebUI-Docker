@@ -40,4 +40,5 @@ fi
 
 # Switch to sduser for running the actual application
 echo "Switching to sduser..."
-exec su -c "./webui.sh --listen --port 7860 --api --api-auth admin:admin123 --enable-insecure-extension-access" sduser
+# exec su -c "./webui.sh --listen --port 7860 --api --api-auth admin:admin123 --enable-insecure-extension-access" sduser
+exec su -c "./webui.sh --listen --port 7860 --api --enable-insecure-extension-access" sduser
